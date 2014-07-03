@@ -3,4 +3,5 @@
 .rvmrc
 .idea
 log/
+bin/
 .ruby-version
