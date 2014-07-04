@@ -2,12 +2,15 @@ namespace :db do
   namespace :mongo do
     desc 'Drops all the collections for the database for the current Rails.env'
     task :drop => :environment do
-      Mongoid.master.collections.each {|col| col.drop_indexes && col.drop unless ['system.indexes', 'system.users'].include?(col.name) }
+      Mongoid.master.collections.each do |col|
+        next if ['system.indexes', 'system.users'].include?(col.name)
+        col.drop_indexes && col.drop
+      end
     end
 
     desc 'Load the seed data from db/seeds.rb'
     task :seed => :environment do
-      seed_file = File.join(Rails.application.root, 'db', 'seeds.rb')
+      seed_file = Rails.application.root.join('db', 'seeds.rb')
       load(seed_file) if File.exist?(seed_file)
     end
 
@@ -24,8 +27,11 @@ namespace :db do
 
     desc "Migrate the database through scripts in db/migrate. Target specific version with VERSION=x. Turn off output with VERBOSE=false."
     task :migrate => :environment do
-      Mongoid::Migration.verbose = ENV["VERBOSE"] ? ENV["VERBOSE"] == "true" : true
-      Mongoid::Migrator.migrate("db/migrate/", ENV["VERSION"] ? ENV["VERSION"].to_i : nil)
+      verbose = ENV.has_key?('VERBOSE')
+      version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
+
+      Mongoid::Migration.verbose = verbose
+      Mongoid::Migrator.migrate(version)
     end
 
     namespace :migrate do
@@ -46,35 +52,30 @@ namespace :db do
 
       desc 'Runs the "up" for a given migration VERSION.'
       task :up => :environment do
-        version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
-        raise "VERSION is required" unless version
-        Mongoid::Migrator.run(:up, "db/migrate/", version)
+        Mongoid::Migrator.up(required_version)
       end
 
       desc 'Runs the "down" for a given migration VERSION.'
       task :down => :environment do
-        version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
-        raise "VERSION is required" unless version
-        Mongoid::Migrator.run(:down, "db/migrate/", version)
+        Mongoid::Migrator.down(required_version)
+      end
+
+      def required_version
+        ENV.fetch('VERSION') { raise "VERSION is required" }
       end
     end
 
     desc 'Rolls the database back to the previous migration. Specify the number of steps with STEP=n'
     task :rollback => :environment do
-      step = ENV['STEP'] ? ENV['STEP'].to_i : 1
-      Mongoid::Migrator.rollback('db/migrate/', step)
+      Mongoid::Migrator.rollback(ENV.fetch('STEP', 1).to_i)
     end
 
     namespace :schema do
-      task :load do
-        # noop
-      end
+      task :load # noop
     end
 
     namespace :test do
-      task :prepare do
-        # Stub out for MongoDB
-      end
+      task :prepare # Stub out for MongoDB
     end
   end
 end
