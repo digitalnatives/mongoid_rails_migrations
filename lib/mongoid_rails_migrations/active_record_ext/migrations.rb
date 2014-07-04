@@ -31,14 +31,14 @@ module Mongoid #:nodoc
 
   # Data migrations can manage the modification of data. It's a solution to the common problem of modifying
   # data between code revisions within a document oriented database.
-  # 
+  #
   # Example of simple migration for a system dependency:
-  # 
+  #
   #   class AddBaselineSurveySchema < Mongoid::Migration
   #     def self.up
   #       SurveySchema.create(:label => 'Baseline Survey')
   #     end
-  #     
+  #
   #     def self.down
   #       SurveySchema.where(:label => 'Baseline Survey').first.destroy
   #     end
@@ -183,42 +183,41 @@ module Mongoid #:nodoc
 
   class Migrator#:nodoc:
     class << self
-      def migrate(migrations_path, target_version = nil)
+      def migrations_path
+        @migrations_path ||= 'db/migrate'
+      end
+
+      def migrations_path=(value)
+        @migrations_path = value
+      end
+
+      def migrate(target_version = nil, migrations_path = nil)
         case
-          when target_version.nil?              then up(migrations_path, target_version)
-          when current_version > target_version then down(migrations_path, target_version)
-          else                                       up(migrations_path, target_version)
+        when target_version.nil?              then up(target_version, migrations_path)
+        when current_version > target_version then down(target_version, migrations_path)
+        else                                       up(target_version, migrations_path)
         end
       end
 
-      def rollback(migrations_path, steps=1)
-        move(:down, migrations_path, steps)
+      def rollback(steps = 1, migrations_path = nil)
+        move(:down, steps, migrations_path)
       end
 
-      def forward(migrations_path, steps=1)
-        move(:up, migrations_path, steps)
+      def forward(steps = 1, migrations_path = nil)
+        move(:up, steps, migrations_path)
       end
 
-      def up(migrations_path, target_version = nil)
-        self.new(:up, migrations_path, target_version).migrate
+      def up(target_version = nil, migrations_path = nil)
+        self.new(:up, target_version, migrations_path).migrate
       end
 
-      def down(migrations_path, target_version = nil)
-        self.new(:down, migrations_path, target_version).migrate
+      def down(target_version = nil, migrations_path = nil)
+        self.new(:down, target_version, migrations_path).migrate
       end
 
-      def run(direction, migrations_path, target_version)
-        self.new(direction, migrations_path, target_version).run
+      def run(direction, target_version, migrations_path = nil)
+        self.new(direction, target_version, migrations_path).run
       end
-
-      def migrations_path
-        'db/migrate'
-      end
-
-      # def schema_migrations_table_name
-      #   # Base.table_name_prefix + 'schema_migrations' + Base.table_name_suffix
-      #   'data_migrations'
-      # end
 
       def get_all_versions
         # table = Arel::Table.new(schema_migrations_table_name)
@@ -244,22 +243,23 @@ module Mongoid #:nodoc
 
       private
 
-      def move(direction, migrations_path, steps)
+      def move(direction, steps, migrations_path)
         migrator = self.new(direction, migrations_path)
-        start_index = migrator.migrations.index(migrator.current_migration)
+        return unless start_index = migrator.migrations.index(migrator.current_migration)
 
-        if start_index
-          finish = migrator.migrations[start_index + steps]
-          version = finish ? finish.version : 0
-          send(direction, migrations_path, version)
-        end
+        finish = migrator.migrations[start_index + steps]
+        version = finish ? finish.version : 0
+
+        send(direction, version, migrations_path)
       end
     end
 
-    def initialize(direction, migrations_path, target_version = nil)
+    def initialize(direction, target_version = nil, migrations_path = nil)
       # raise StandardError.new("This database does not yet support migrations") unless Base.connection.supports_migrations?
       # Base.connection.initialize_schema_migrations_table
-      @direction, @migrations_path, @target_version = direction, migrations_path, target_version
+      @direction       = direction
+      @migrations_path = migrations_path || self.class.migrations_path
+      @target_version  = target_version
     end
 
     def current_version
@@ -281,7 +281,7 @@ module Mongoid #:nodoc
 
     def migrate
       current = migrations.detect { |m| m.version == current_version }
-      target = migrations.detect { |m| m.version == @target_version }
+      target  = migrations.detect { |m| m.version == @target_version }
 
       if target.nil? && !@target_version.nil? && @target_version > 0
         raise UnknownMigrationVersionError.new(@target_version)
