@@ -29,4 +29,5 @@ Gem::Specification.new do |s|
   s.add_dependency('activesupport',  rails_version)
   s.add_development_dependency('mongoid', '>= 3.0.0')
   s.add_development_dependency('test-unit', '>= 2.5.0')
+  s.add_development_dependency('pry')
 end
