@@ -2,11 +2,14 @@ namespace :db do
   namespace :mongo do
     desc 'Drops all the collections for the database for the current Rails.env'
     task :drop => :environment do
-      Mongoid.master.collections.each do |col|
-        next if ['system.indexes', 'system.users'].include?(col.name)
-        col.drop_indexes && col.drop
+      Mongoid.default_session.collections.each do |collection|
+        next if ['system.indexes', 'system.users'].include?(collection.name)
+        collection.drop
       end
     end
+
+    desc 'Stub out for MongoDB'
+    task :create # NOOP
 
     desc 'Load the seed data from db/seeds.rb'
     task :seed => :environment do
@@ -15,10 +18,10 @@ namespace :db do
     end
 
     desc 'Create the database, and initialize with the seed data'
-    task :setup => [ 'db:mongo:create', 'db:mongo:seed' ]
+    task :setup => ['db:mongo:create', 'db:mongo:seed']
 
     desc 'Delete data and seed'
-    task :reseed => [ 'db:mongo:drop', 'db:mongo:seed' ]
+    task :reseed => ['db:mongo:drop', 'db:mongo:seed']
 
     desc 'Current database version'
     task :version => :environment do
@@ -28,7 +31,7 @@ namespace :db do
     desc "Migrate the database through scripts in db/migrate. Target specific version with VERSION=x. Turn off output with VERBOSE=false."
     task :migrate => :environment do
       verbose = ENV.has_key?('VERBOSE')
-      version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
+      version = ENV['VERSION'] ? ENV['VERSION'].to_i : nil
 
       Mongoid::Migration.verbose = verbose
       Mongoid::Migrator.migrate(version)
@@ -47,8 +50,7 @@ namespace :db do
       end
 
       desc 'Resets your database using your migrations for the current environment'
-      # should db:create be changed to db:setup? It makes more sense wanting to seed
-      task :reset => ["db:mongo:drop", "db:mongo:create", "db:mongo:migrate"]
+      task :reset => ["db:mongo:drop", "db:mongo:setup", "db:mongo:migrate"]
 
       desc 'Runs the "up" for a given migration VERSION.'
       task :up => :environment do

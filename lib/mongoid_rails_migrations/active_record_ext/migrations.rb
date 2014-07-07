@@ -77,8 +77,8 @@ module Mongoid #:nodoc
         return unless respond_to?(direction)
 
         case direction
-          when :up   then announce "migrating"
-          when :down then announce "reverting"
+        when :up   then announce "migrating"
+        when :down then announce "reverting"
         end
 
         result = nil
@@ -182,15 +182,10 @@ module Mongoid #:nodoc
   end
 
   class Migrator#:nodoc:
+    @@migrations_path = 'db/migrate'
+    cattr_accessor :migrations_path
+
     class << self
-      def migrations_path
-        @migrations_path ||= 'db/migrate'
-      end
-
-      def migrations_path=(value)
-        @migrations_path = value
-      end
-
       def migrate(target_version = nil, migrations_path = nil)
         case
         when target_version.nil?              then up(target_version, migrations_path)
