@@ -1,7 +1,7 @@
 == Deprecation notice
 
 This repository is not maintained.
-You may want to look on the original repository: https://github.com/adacosta/mongoid_rails_migrations
+You may want to look on the original repository: https://github.com/dennis1600/ruby-rets
 
 == RELEASE NOTES
 * For rails >= 3.2.0 and mongoid >= 3.0.0, use version 1.0.0
