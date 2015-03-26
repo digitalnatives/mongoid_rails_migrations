@@ -1,3 +1,8 @@
+== Deprecation notice
+
+This repository is not maintained.
+You may want to look on the original repository: https://github.com/adacosta/mongoid_rails_migrations
+
 == RELEASE NOTES
 * For rails >= 3.2.0 and mongoid >= 3.0.0, use version 1.0.0
 * For rails >= 3.0.0 (but < 3.2.0) and mongoid >= 2.0.0, use version 0.0.14
